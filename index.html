@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CollegeCoach AI</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0f0e17; color: #1f2937; }
+    #app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    #sidebar { width: 230px; background: #0f0e17; color: white; display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; }
+    .logo { padding: 20px 16px 12px; border-bottom: 1px solid #1e1b2e; }
+    .logo h1 { font-size: 1rem; font-weight: 800; color: white; }
+    .logo p { font-size: 0.7rem; color: #6b7280; margin-top: 2px; }
+    .section-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.2px; color: #4b5563; padding: 12px 16px 4px; }
+    .mode-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 14px; border: none; cursor: pointer; background: transparent; color: #9ca3af; font-size: 0.84rem; text-align: left; border-left: 3px solid transparent; transition: all 0.15s; }
+    .mode-btn.active { background: #1e1b2e; color: white; font-weight: 700; }
+    .session-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px 4px; }
+    .new-btn { background: #1e1b2e; border: none; color: #a78bfa; border-radius: 6px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 700; }
+    .session-btn { display: block; width: 100%; text-align: left; padding: 7px 14px; border: none; cursor: pointer; background: transparent; color: #9ca3af; font-size: 0.8rem; border-radius: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: all 0.15s; }
+    .session-btn.active { background: #1e1b2e; color: white; }
+    .sessions-list { flex: 1; overflow-y: auto; }
+    .sidebar-footer { padding: 10px 16px; border-top: 1px solid #1e1b2e; font-size: 0.68rem; color: #374151; }
+
+    /* Main */
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: white; }
+    #topbar { padding: 13px 22px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .topbar-left { display: flex; align-items: center; gap: 10px; }
+    .mode-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    .mode-name { font-weight: 700; font-size: 0.93rem; }
+    .mode-sub { font-size: 0.72rem; color: #9ca3af; }
+    .topbar-right { display: flex; gap: 8px; }
+    .btn-outline { padding: 7px 13px; border-radius: 8px; border: 2px solid #e5e7eb; background: white; color: #6b7280; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
+    .btn-primary { padding: 7px 13px; border-radius: 8px; border: none; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+
+    /* Tip bar */
+    #tipbar { background: #fef3c7; border-bottom: 1px solid #fde68a; padding: 7px 20px; font-size: 0.78rem; color: #92400e; display: flex; gap: 8px; flex-shrink: 0; }
+
+    /* Deploy panel */
+    #deploy-panel { background: #1e1b2e; color: white; padding: 18px 22px; border-bottom: 2px solid #4f46e5; font-size: 0.82rem; display: none; }
+    #deploy-panel.open { display: block; }
+    #deploy-panel h3 { color: #a78bfa; font-size: 0.95rem; margin-bottom: 10px; }
+    .deploy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .deploy-col h4 { color: #86efac; margin-bottom: 6px; font-size: 0.82rem; }
+    .deploy-col ol { padding-left: 16px; color: #d1d5db; line-height: 1.9; }
+    .deploy-warning { background: #2d1f5e; border-radius: 8px; padding: 8px 12px; margin-top: 10px; font-size: 0.75rem; color: #fde68a; }
+
+    /* Messages */
+    #messages { flex: 1; overflow-y: auto; padding: 22px 26px; }
+    .empty-state { text-align: center; padding-top: 50px; color: #9ca3af; }
+    .empty-icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .empty-title { font-weight: 700; font-size: 1.05rem; color: #374151; margin-bottom: 6px; }
+    .empty-sub { font-size: 0.85rem; max-width: 360px; margin: 0 auto; line-height: 1.6; }
+    .starters { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .starter-btn { background: #f3f4f6; border: none; border-radius: 999px; padding: 7px 14px; font-size: 0.78rem; cursor: pointer; color: #374151; }
+    .msg-row { display: flex; margin-bottom: 14px; align-items: flex-start; gap: 10px; }
+    .msg-row.user { justify-content: flex-end; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; margin-top: 4px; }
+    .avatar.coach { background: linear-gradient(135deg,#7c3aed,#4f46e5); }
+    .avatar.user { background: #e5e7eb; }
+    .bubble { max-width: 74%; padding: 11px 15px; border-radius: 14px; font-size: 0.88rem; line-height: 1.65; white-space: pre-wrap; }
+    .bubble.coach { background: #f9fafb; color: #1f2937; border-bottom-left-radius: 4px; }
+    .bubble.user { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; border-bottom-right-radius: 4px; }
+    .bubble-label { font-weight: 700; font-size: 0.68rem; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+    .typing { display: flex; gap: 4px; align-items: center; padding: 12px 15px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #7c3aed; animation: bounce 1s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.15s; }
+    .dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+    /* Input */
+    #input-area { padding: 14px 22px; border-top: 1px solid #f3f4f6; background: white; flex-shrink: 0; }
+    .input-box { display: flex; gap: 10px; align-items: flex-end; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 13px; padding: 10px 13px; }
+    #user-input { flex: 1; border: none; background: transparent; resize: none; font-size: 0.88rem; font-family: sans-serif; outline: none; color: #1f2937; line-height: 1.6; }
+    #send-btn { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; border: none; border-radius: 9px; padding: 9px 16px; font-weight: 700; cursor: pointer; font-size: 0.88rem; flex-shrink: 0; }
+    #send-btn:disabled { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+    .input-hint { text-align: center; font-size: 0.68rem; color: #d1d5db; margin-top: 5px; }
+
+    /* Key gate */
+    #key-gate { min-height: 100vh; background: linear-gradient(135deg,#0f0e17,#1e1b2e); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .key-card { background: white; border-radius: 20px; padding: 38px 34px; max-width: 440px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.3); }
+    .key-card .hero { text-align: center; margin-bottom: 24px; }
+    .key-card .hero-icon { font-size: 3rem; margin-bottom: 8px; }
+    .key-card h1 { font-size: 1.5rem; font-weight: 800; color: #1f2937; }
+    .key-card p { color: #6b7280; font-size: 0.88rem; margin-top: 5px; }
+    .key-note { background: #fef3c7; border: 2px solid #fde68a; border-radius: 10px; padding: 10px 13px; font-size: 0.8rem; color: #92400e; margin-bottom: 18px; line-height: 1.5; }
+    .key-label { font-weight: 700; font-size: 0.83rem; color: #374151; display: block; margin-bottom: 6px; }
+    #api-key-input { width: 100%; padding: 11px 13px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 0.88rem; font-family: monospace; outline: none; }
+    #launch-btn { width: 100%; margin-top: 13px; padding: 13px; background: linear-gradient(135deg,#4f46e5,#7c3aed); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+    .key-footer { text-align: center; margin-top: 10px; font-size: 0.72rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+<!-- KEY GATE -->
+<div id="key-gate">
+  <div class="key-card">
+    <div class="hero">
+      <div class="hero-icon">🎓</div>
+      <h1>CollegeCoach AI</h1>
+      <p>Your personal college application assistant — built by students, for students.</p>
+    </div>
+    <div class="key-note">🔑 <strong>For students:</strong> Your teacher will share the API key for class use. Keep it safe — don't share it publicly!</div>
+    <label class="key-label" for="api-key-input">Claude API Key</label>
+    <input id="api-key-input" type="password" placeholder="sk-ant-..." />
+    <button id="launch-btn" onclick="launch()">Launch App →</button>
+    <p class="key-footer">Get a free key at <strong>console.anthropic.com</strong></p>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until key entered) -->
+<div id="app" style="display:none">
+  <div id="sidebar">
+    <div class="logo"><h1>🎓 CollegeCoach AI</h1><p>Your application assistant</p></div>
+    <div class="section-label">Mode</div>
+    <div id="modes"></div>
+    <div class="session-header">
+      <span class="section-label" style="padding:0">Sessions</span>
+      <button class="new-btn" onclick="newSession()">+ New</button>
+    </div>
+    <div class="sessions-list" id="sessions-list"></div>
+    <div class="sidebar-footer">Built with Claude · Free hosting on Netlify</div>
+  </div>
+
+  <div id="main">
+    <div id="topbar">
+      <div class="topbar-left">
+        <div class="mode-icon" id="topbar-icon"></div>
+        <div><div class="mode-name" id="topbar-name"></div><div class="mode-sub" id="topbar-sub"></div></div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn-outline" onclick="clearChat()">🗑 Clear</button>
+        <button class="btn-primary" onclick="toggleDeploy()">🚀 Deploy Guide</button>
+      </div>
+    </div>
+    <div id="tipbar"><strong>💡 Tip:</strong> <span id="tip-text"></span></div>
+    <div id="deploy-panel">
+      <h3>🚀 How to Deploy Your App</h3>
+      <div class="deploy-grid">
+        <div class="deploy-col"><h4>GitHub Pages</h4><ol><li>Create a new GitHub repo</li><li>Upload your project files</li><li>Go to Settings → Pages</li><li>Set source to main branch</li><li>Live at: username.github.io/repo</li></ol></div>
+        <div class="deploy-col"><h4>Netlify (easiest)</h4><ol><li>Go to netlify.com → sign up free</li><li>Drag & drop your project folder</li><li>Get an instant live URL</li><li>Add custom domain (optional)</li><li>Auto-deploys on every update</li></ol></div>
+      </div>
+      <div class="deploy-warning">⚠️ <strong>Security:</strong> Share API keys privately via Google Classroom. Never put keys in public repos — teach students to use environment variables for real deployments.</div>
+    </div>
+    <div id="messages"></div>
+    <div id="input-area">
+      <div class="input-box">
+        <textarea id="user-input" rows="3" placeholder="Type your message..."></textarea>
+        <button id="send-btn" onclick="sendMessage()">Send ↑</button>
+      </div>
+      <div class="input-hint">Enter to send · Shift+Enter for new line · Key stored in memory only</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are an encouraging, expert college application coach for high school students. Your role is to help students:
+1. Brainstorm and refine their personal statement and supplemental essays
+2. Identify their unique strengths, values, and stories worth sharing
+3. Give specific, actionable feedback on drafts (structure, voice, clarity, impact)
+4. Help them tailor essays to specific colleges and prompts
+5. Suggest ways to make their application stand out authentically
+
+Tone: Warm, supportive, honest. Celebrate their uniqueness.
+NEVER write essays FOR them — guide them to find their own voice.
+Always end with one concrete next step or question to keep momentum going.
+Keep responses under 300 words unless reviewing a full draft.`;
+
+const MODES = [
+  { id:"brainstorm", icon:"💡", label:"Brainstorm", color:"#7c3aed", placeholder:"Tell me about yourself — a challenge, something you're proud of, or a moment that changed how you think...", starters:["Tell me about a challenge you overcame","What activity means the most to you?","Describe a moment you changed your mind"] },
+  { id:"feedback",   icon:"✏️", label:"Essay Feedback", color:"#0891b2", placeholder:"Paste your essay draft here. I'll give you specific feedback on structure, voice, clarity, and impact...", starters:[] },
+  { id:"prompt",     icon:"📝", label:"Prompt Help",    color:"#059669", placeholder:"Paste a college essay prompt and I'll help you figure out the best angle to approach it...", starters:[] },
+  { id:"school",     icon:"🏫", label:"School Match",   color:"#d97706", placeholder:"Tell me about a school you're applying to and what you want to highlight in their supplemental essay...", starters:[] },
+];
+
+const TIPS = [
+  "Admissions officers read thousands of essays — your opening sentence must earn the next one.",
+  "Show, don't tell. Instead of 'I am a leader,' describe the moment you had to lead.",
+  "The best essays are specific. One vivid detail beats three vague claims every time.",
+  "Your essay should sound like YOU — not an AI, not a teacher, not a thesaurus.",
+  "Answer the actual prompt. Many students write a great essay that misses the question.",
+  "'Why this school' essays work best when you name specific programs, professors, or opportunities.",
+];
+
+let apiKey = "";
+let currentMode = "brainstorm";
+let sessions = [{ id: 1, title: "Session 1", messages: [] }];
+let activeSessionId = 1;
+let tipIndex = 0;
+
+function launch() {
+  const k = document.getElementById("api-key-input").value.trim();
+  if (!k.startsWith("sk-ant-")) { alert("Please enter a valid Claude API key (starts with sk-ant-)"); return; }
+  apiKey = k;
+  document.getElementById("key-gate").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  initApp();
+}
+
+function initApp() {
+  renderModes();
+  renderSessions();
+  setMode("brainstorm");
+  document.getElementById("tip-text").textContent = TIPS[0];
+  setInterval(() => { tipIndex = (tipIndex + 1) % TIPS.length; document.getElementById("tip-text").textContent = TIPS[tipIndex]; }, 6000);
+  document.getElementById("user-input").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+}
+
+function renderModes() {
+  const el = document.getElementById("modes");
+  el.innerHTML = MODES.map(m => `<button class="mode-btn ${m.id===currentMode?'active':''}" onclick="setMode('${m.id}')" style="${m.id===currentMode?'border-left-color:'+m.color:''}">${m.icon} ${m.label}</button>`).join("");
+}
+
+function setMode(id) {
+  currentMode = id;
+  const m = MODES.find(x => x.id === id);
+  document.getElementById("topbar-icon").textContent = m.icon;
+  document.getElementById("topbar-icon").style.background = m.color;
+  document.getElementById("topbar-name").textContent = m.label + " Mode";
+  document.getElementById("user-input").placeholder = m.placeholder;
+  renderModes();
+  renderMessages();
+}
+
+function renderSessions() {
+  document.getElementById("sessions-list").innerHTML = sessions.map(s =>
+    `<button class="session-btn ${s.id===activeSessionId?'active':''}" onclick="switchSession(${s.id})" title="${s.title}">${s.title}</button>`
+  ).join("");
+}
+
+function switchSession(id) { activeSessionId = id; renderSessions(); renderMessages(); updateSubtitle(); }
+
+function newSession() {
+  const id = Date.now();
+  sessions.push({ id, title: "New Session", messages: [] });
+  switchSession(id);
+}
+
+function getSession() { return sessions.find(s => s.id === activeSessionId); }
+
+function updateSubtitle() {
+  const msgs = getSession().messages;
+  document.getElementById("topbar-sub").textContent = msgs.length > 0 ? `${msgs.length} messages` : "Start a new conversation";
+}
+
+function renderMessages() {
+  const msgs = getSession().messages;
+  const el = document.getElementById("messages");
+  if (msgs.length === 0) {
+    const m = MODES.find(x => x.id === currentMode);
+    const starters = m.starters.map(s => `<button class="starter-btn" onclick="useStarter('${s}')">${s}</button>`).join("");
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${m.icon}</div><div class="empty-title">${m.label} Mode</div><div class="empty-sub">${m.placeholder}</div><div class="starters">${starters}</div></div>`;
+  } else {
+    el.innerHTML = msgs.map(m => m.role === "user"
+      ? `<div class="msg-row user"><div class="bubble user">${escHtml(m.content)}</div><div class="avatar user">👤</div></div>`
+      : `<div class="msg-row"><div class="avatar coach">🎓</div><div class="bubble coach"><div class="bubble-label">Coach</div>${escHtml(m.content)}</div></div>`
+    ).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+  updateSubtitle();
+}
+
+function escHtml(t) { return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"); }
+function useStarter(t) { document.getElementById("user-input").value = t; document.getElementById("user-input").focus(); }
+function clearChat() { getSession().messages = []; renderMessages(); }
+function toggleDeploy() { document.getElementById("deploy-panel").classList.toggle("open"); }
+
+async function sendMessage() {
+  const input = document.getElementById("user-input");
+  const text = input.value.trim();
+  if (!text) return;
+  const btn = document.getElementById("send-btn");
+  const session = getSession();
+  session.messages.push({ role: "user", content: text });
+  if (session.title === "New Session" || session.title.startsWith("Session ")) session.title = text.slice(0, 30) + (text.length > 30 ? "…" : "");
+  input.value = "";
+  btn.disabled = true;
+  renderMessages();
+  renderSessions();
+
+  // Show typing indicator
+  const msgEl = document.getElementById("messages");
+  const typing = document.createElement("div");
+  typing.className = "msg-row"; typing.id = "typing";
+  typing.innerHTML = `<div class="avatar coach">🎓</div><div class="bubble coach"><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  msgEl.appendChild(typing);
+  msgEl.scrollTop = msgEl.scrollHeight;
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: SYSTEM_PROMPT, messages: session.messages })
+    });
+    const data = await res.json();
+    session.messages.push({ role: "assistant", content: data.content?.[0]?.text || "Sorry, something went wrong." });
+  } catch(e) {
+    session.messages.push({ role: "assistant", content: "⚠️ Error: " + e.message });
+  }
+  btn.disabled = false;
+  renderMessages();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("api-key-input")?.addEventListener("keydown", e => { if (e.key === "Enter") launch(); });
+});
+</script>
+</body>
+</html>
+```
+
+---
+
+## File 2 — `_redirects` (Netlify only, one line)
+```
+/*    /index.html    200
+```
+
+---
+
+## File 3 — `.nojekyll` (GitHub Pages only)
+```
+(empty file — just create it with no content)
