@@ -288,21 +288,26 @@ async function sendMessage() {
   msgEl.appendChild(typing);
   msgEl.scrollTop = msgEl.scrollHeight;
 
-  try {
+ try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: SYSTEM_PROMPT, messages: session.messages })
     });
     const data = await res.json();
-    session.messages.push({ role: "assistant", content: data.content?.[0]?.text || "Sorry, something went wrong." });
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message || `API error ${res.status}`;
+      session.messages.push({ role: "assistant", content: `⚠️ API Error (${res.status}): ${errMsg}` });
+    } else {
+      session.messages.push({ role: "assistant", content: data.content?.[0]?.text || "Sorry, something went wrong." });
+    }
   } catch(e) {
-    session.messages.push({ role: "assistant", content: "⚠️ Error: " + e.message });
+    session.messages.push({ role: "assistant", content: "⚠️ Network Error: " + e.message });
   }
   btn.disabled = false;
   renderMessages();
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("api-key-input")?.addEventListener("keydown", e => { if (e.key === "Enter") launch(); });
 });
